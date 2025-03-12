@@ -1,0 +1,63 @@
+# extract_pdf_table_to_csv
+# Script for extracting pdf tables to csv using  pdfplumber  &amp; pandas
+
+import pdfplumber
+import pandas as pd
+
+# Step 1: Extract tables from PDF
+def extract_table_from_pdf(pdf_path):
+    tables = []
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            # Extract tables from the current page
+            tables.extend(page.extract_tables())
+    return tables
+
+# Step 2: Clean and prepare data
+def clean_tables(tables):
+    cleaned_tables = []
+    for table in tables:
+        # Convert the table to a pandas DataFrame
+        df = pd.DataFrame(table)
+
+        # Set the first row as column headers
+        df.columns = df.iloc[0]
+
+        # Remove the header row from the data
+        df = df[1:]
+
+        # Drop rows with all missing values (if any)
+        df = df.dropna(how="all")
+
+        cleaned_tables.append(df)
+    
+    return cleaned_tables
+
+# Step 3: Write the table to a CSV file
+def save_table_to_csv(df, csv_path):
+    df.to_csv(csv_path, index=False)
+
+# Main function to encapsulate the workflow
+def main():
+    # Define file paths
+    pdf_path = "/workspaces/extract_pdf_table_to_csv/sample_tables.pdf"  # Replace with your PDF file path
+    csv_path = "/workspaces/extract_pdf_table_to_csv/output_table.csv"  # Replace with your desired CSV file path
+
+    # Extract tables from the PDF
+    tables = extract_table_from_pdf(pdf_path)
+
+    if tables:
+        # Clean all tables
+        cleaned_tables = clean_tables(tables)
+
+        # Save the cleaned tables to CSV files
+        for i, df in enumerate(cleaned_tables):
+            output_csv_path = csv_path.replace(".csv", f"_{i+1}.csv")
+            save_table_to_csv(df, output_csv_path)
+            print(f"Table {i+1} successfully saved to {output_csv_path}")
+    else:
+        print("No tables found in the PDF.")
+
+# Run the main function
+if __name__ == "__main__":
+    main()
